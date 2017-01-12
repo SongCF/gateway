@@ -104,6 +104,9 @@ func handleClient(conn net.Conn) {
 			return
 		}
 
+		//TODO delete
+		fmt.Printf("recv size:%v, data:%v\n", size, payload)
+
 		select {
 		case sess.in <- payload:
 		case <- sess.die:

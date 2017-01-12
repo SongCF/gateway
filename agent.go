@@ -14,9 +14,12 @@ func agent(sess *Session) {
 		select {
 		case msg := <- sess.in:
 			sess.packet_count++
+			//TODO delete
+			fmt.Printf("msg:%v, pack_count:%v\n", msg, sess.packet_count)
+
 			// TODO game rpc
 			// ret
-			ret := "ack_" + string(msg[:])
+			ret := string(msg[:]) + "ack_"
 			send(sess, []byte(ret))
 		case <- sess.ntf:
 			// TODO

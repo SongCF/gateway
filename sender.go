@@ -25,11 +25,17 @@ func send(sess *Session, data []byte) {
 	if data == nil {
 		return
 	}
+
+	//TODO delete
+	fmt.Printf("put in out buf:%v\n", data)
 	sess.out <- data
 }
 
 
 func raw_send(conn net.Conn, data []byte) bool {
+	//TODO delete
+	fmt.Println("to raw_send...")
+
 	size := len(data)
 	cache := make([]byte, size + 2) //TODO cache 优化，不用每次都创建
 	binary.BigEndian.PutUint16(cache, uint16(size))
@@ -40,5 +46,7 @@ func raw_send(conn net.Conn, data []byte) bool {
 		fmt.Printf("Error send reply data, bytes: %v reason: %v", n, err)
 		return false
 	}
+	//TODO delete
+	fmt.Println("raw_send ok!")
 	return true
 }
