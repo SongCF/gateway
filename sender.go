@@ -8,12 +8,18 @@ import (
 
 
 func sender(sess *Session) {
+	// wait group
+	wg.Add(1)
+	defer wg.Done()
+	//
 	for {
 		select {
-		case data := <- sess.out:
+		case data, ok := <- sess.out:
+			if !ok {
+				return
+			}
 			raw_send(sess.conn, data)
-		case <- die:
-			close(sess.die)
+		case <- sess.close:
 			return
 		}
 	}

@@ -10,18 +10,18 @@ import (
 
 
 type Session struct {
-	ip net.IP
-	conn net.Conn
+	ip           net.IP
+	conn         net.Conn
 
-	user_id int32
-	app_id string
+	user_id      int32
+	app_id       string
 
-	die chan struct{}         //会话关闭信号  TODO 到底由谁发起close好  如何与 signal中的die与wg配合
-	in chan []byte
-	out chan []byte
-	ntf chan []byte
+	close        chan struct{} //会话关闭信号
+	in           chan []byte
+	out          chan []byte
+	ntf          chan []byte
 
-	packet_count int32        //对包进行计数
+	packet_count int32         //对包进行计数
 	connect_time time.Time
 }
 
@@ -36,7 +36,7 @@ func (sess *Session) init(conn net.Conn) bool {
 	sess.ip = net.ParseIP(host)
 	sess.conn = conn
 
-	sess.die = make(chan struct{})
+	sess.close = make(chan struct{})
 	sess.in = make(chan []byte)
 	sess.out = make(chan []byte)
 	sess.ntf = make(chan []byte)
@@ -48,7 +48,7 @@ func (sess *Session) init(conn net.Conn) bool {
 }
 
 func (sess *Session) clean() {
-	close(sess.die)
+	close(sess.close)
 	close(sess.in)
 	close(sess.out)
 	close(sess.ntf)
@@ -62,10 +62,6 @@ func (sess *Session) clean() {
 // each packet is defined as :
 // | 2B size |     DATA       |
 func handleClient(conn net.Conn) {
-	// wait group
-	wg.Add(1)
-	defer wg.Done()
-
 	// init session
 	var sess Session
 	ok := sess.init(conn)
@@ -88,10 +84,10 @@ func handleClient(conn net.Conn) {
 		// will cause the read to block FOREVER, so a timeout is a rescue.
 		conn.SetReadDeadline(time.Now().Add(TCP_READ_DEADLINE * time.Second))
 
-		// read head
+		// read head, 如果客户端关闭socket，在这里会return，然后执行 defer sess.clean
 		n, err := io.ReadFull(conn, header)
 		if err != nil {
-			fmt.Printf("Error: read header failed, ip:%v reason:%v size:%v", sess.ip, err, n)
+			fmt.Printf("Error: read header failed, ip:%v reason:%v size:%v\n", sess.ip, err, n)
 			return
 		}
 		size := binary.BigEndian.Uint16(header)
@@ -100,7 +96,7 @@ func handleClient(conn net.Conn) {
 		payload := make([]byte, size)  //TODO 优化 使用固定分配好的buf，不用每次都从新分配
 		n, err = io.ReadFull(conn, payload)
 		if err != nil {
-			fmt.Printf("Error: read payload failed, ip:%v reason:%v size:%v", sess.ip, err, n)
+			fmt.Printf("Error: read payload failed, ip:%v reason:%v size:%v\n", sess.ip, err, n)
 			return
 		}
 
@@ -109,8 +105,9 @@ func handleClient(conn net.Conn) {
 
 		select {
 		case sess.in <- payload:
-		case <- sess.die:
-			fmt.Printf("connection closed by logic, ip:%v", sess.ip)
+		case <- die:
+			// close sess.close in defer
+			fmt.Printf("connection closed by logic, ip:%v\n", sess.ip)
 			return
 		}
 	}

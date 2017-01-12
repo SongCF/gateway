@@ -7,29 +7,42 @@ import (
 
 
 func agent(sess *Session) {
+	// wait group
+	wg.Add(1)
+	defer wg.Done()
 	// minute timer
 	min_timer := time.After(time.Minute)
 
+	// >> the main message loop <<
+	// handles 4 types of message:
+	//  1. from client
+	//  2. from game service
+	//  3. timer
+	//  4. server shutdown signal
 	for {
 		select {
-		case msg := <- sess.in:
+		case msg, ok := <- sess.in:
+			if !ok {
+				return
+			}
 			sess.packet_count++
 			//TODO delete
 			fmt.Printf("msg:%v, pack_count:%v\n", msg, sess.packet_count)
 
 			// TODO game rpc
 			// ret
-			ret := string(msg[:]) + "ack_"
+			ret := string(msg[:]) + "_ack"
 			send(sess, []byte(ret))
-		case <- sess.ntf:
+		case msg, ok := <- sess.ntf:
+			if !ok {
+				return
+			}
 			// TODO
-			push := "ntf"
-			send(sess, []byte(push))
+			send(sess, msg)
 		case <- min_timer:
 			timer_work()
 			min_timer = time.After(time.Minute)
-		case <- die:
-			close(sess.die)
+		case <- sess.close:
 			return
 		}
 	}

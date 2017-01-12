@@ -23,7 +23,7 @@ func signalHandler() {
 			println("sigterm received")
 			close(die)
 			println("waiting for agents close, please wait...")
-			// wait: 1.client(read sock), 2.agent(in), 3.out -> close conn
+			// wait close agent
 			wg.Wait()
 			println("shutdown.")
 			os.Exit(0)
