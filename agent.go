@@ -42,7 +42,7 @@ func agent(sess *Session) {
 		case <- min_timer:
 			timer_work()
 			min_timer = time.After(time.Minute)
-		case <- sess.close:
+		case <- sess.die:
 			return
 		}
 	}

@@ -16,7 +16,7 @@ type Session struct {
 	user_id      int32
 	app_id       string
 
-	close        chan struct{} //会话关闭信号
+	die          chan struct{} //会话关闭信号
 	in           chan []byte
 	out          chan []byte
 	ntf          chan []byte
@@ -36,7 +36,7 @@ func (sess *Session) init(conn net.Conn) bool {
 	sess.ip = net.ParseIP(host)
 	sess.conn = conn
 
-	sess.close = make(chan struct{})
+	sess.die = make(chan struct{})
 	sess.in = make(chan []byte)
 	sess.out = make(chan []byte)
 	sess.ntf = make(chan []byte)
@@ -48,7 +48,7 @@ func (sess *Session) init(conn net.Conn) bool {
 }
 
 func (sess *Session) clean() {
-	close(sess.close)
+	close(sess.die)
 	close(sess.in)
 	close(sess.out)
 	close(sess.ntf)

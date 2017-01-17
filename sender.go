@@ -19,7 +19,7 @@ func sender(sess *Session) {
 				return
 			}
 			raw_send(sess.conn, data)
-		case <- sess.close:
+		case <- sess.die:
 			return
 		}
 	}
