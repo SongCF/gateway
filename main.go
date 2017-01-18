@@ -24,6 +24,10 @@ func main() {
 
 	//init service discover
 
+	//// test
+	//time.Sleep(time.Second * 30)
+	//sigChan <- syscall.SIGTERM
+
 	//wait forever
 	select {}
 }
@@ -54,7 +58,7 @@ func tcpServer() {
 
 		// check server close signal
 		select {
-		case <- die:
+		case <- global_die:
 			listener.Close()
 			return
 		default:

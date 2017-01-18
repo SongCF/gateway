@@ -16,10 +16,10 @@ type Session struct {
 	user_id      int32
 	app_id       string
 
-	die          chan struct{} //会话关闭信号
 	in           chan []byte
 	out          chan []byte
 	ntf          chan []byte
+	die          chan struct{} //会话关闭信号
 
 	packet_count int32         //对包进行计数
 	connect_time time.Time
@@ -47,14 +47,14 @@ func (sess *Session) init(conn net.Conn) bool {
 	return true
 }
 
-func (sess *Session) clean() {
-	close(sess.die)
-	close(sess.in)
-	close(sess.out)
-	close(sess.ntf)
-	// close the connection
-	sess.conn.Close()
-}
+//func (sess *Session) clean() {
+//	close(sess.die) //由agent收到global_die后主动关闭
+//	close(sess.in)
+//	close(sess.out)
+//	close(sess.ntf)
+//	// close the connection
+//	sess.conn.Close()
+//}
 
 
 
@@ -62,6 +62,11 @@ func (sess *Session) clean() {
 // each packet is defined as :
 // | 2B size |     DATA       |
 func handleClient(conn net.Conn) {
+	//TODO delete
+	defer func() {
+		fmt.Println("------ handleClient end.")
+	}()
+
 	// init session
 	var sess Session
 	ok := sess.init(conn)
@@ -69,9 +74,10 @@ func handleClient(conn net.Conn) {
 		fmt.Println("Error: init seesion error.")
 		return
 	}
-	defer sess.clean()
+	defer close(sess.in) //客户端conn关闭时，read header失败，session退出，在这里关闭sess.in来触发agent结束
 
 	//go out buf
+	global_wg.Add(1)
 	go sender(&sess)
 	//go agent
 	go agent(&sess)
@@ -105,8 +111,7 @@ func handleClient(conn net.Conn) {
 
 		select {
 		case sess.in <- payload:
-		case <- die:
-			// close sess.close in defer
+		case <- global_die:
 			fmt.Printf("connection closed by logic, ip:%v\n", sess.ip)
 			return
 		}

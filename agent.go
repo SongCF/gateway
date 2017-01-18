@@ -7,9 +7,13 @@ import (
 
 
 func agent(sess *Session) {
-	// wait group
-	wg.Add(1)
-	defer wg.Done()
+	//TODO delete
+	defer func() {
+		fmt.Println("------ agent end.")
+	}()
+
+	defer close(sess.die)  //sess.in关闭和收到global_die都会结束agent
+
 	// minute timer
 	min_timer := time.After(time.Minute)
 
@@ -22,7 +26,7 @@ func agent(sess *Session) {
 	for {
 		select {
 		case msg, ok := <- sess.in:
-			if !ok {
+			if !ok {  //session 中如果连接断开，或收到global_die会关闭sess.in
 				return
 			}
 			sess.packet_count++
@@ -42,7 +46,7 @@ func agent(sess *Session) {
 		case <- min_timer:
 			timer_work()
 			min_timer = time.After(time.Minute)
-		case <- sess.die:
+		case <- global_die:
 			return
 		}
 	}

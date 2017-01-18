@@ -8,10 +8,12 @@ import (
 
 
 func sender(sess *Session) {
-	// wait group
-	wg.Add(1)
-	defer wg.Done()
-	//
+	//TODO delete
+	defer func() {
+		fmt.Println("------ sender end.")
+	}()
+
+	defer global_wg.Done()
 	for {
 		select {
 		case data, ok := <- sess.out:
@@ -20,6 +22,9 @@ func sender(sess *Session) {
 			}
 			raw_send(sess.conn, data)
 		case <- sess.die:
+			close(sess.out)
+			close(sess.ntf)
+			sess.conn.Close()
 			return
 		}
 	}

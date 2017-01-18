@@ -8,6 +8,7 @@ import (
 	"io"
 	"strings"
 	"fmt"
+	"time"
 )
 
 const (
@@ -57,5 +58,6 @@ func TestTCP(t *testing.T) {
 
 	fmt.Println("ok!")
 
+	//time.Sleep(time.Second * 100)
 	conn.Close()
 }
