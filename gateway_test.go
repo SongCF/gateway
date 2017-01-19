@@ -8,7 +8,6 @@ import (
 	"io"
 	"strings"
 	"fmt"
-	"time"
 )
 
 const (
