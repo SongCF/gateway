@@ -11,7 +11,7 @@ var (
 	global_wg sync.WaitGroup
 	// server close signal
 	global_die = make(chan struct{})
-sigChan = make(chan os.Signal, 1)
+	sigChan = make(chan os.Signal, 1)
 )
 
 func signalHandler() {
